@@ -1,0 +1,73 @@
+package pe.edu.upc.medibridge.appointments.interfaces.rest.controllers;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import pe.edu.upc.medibridge.appointments.domain.model.queries.GetAppointmentByIdQuery;
+import pe.edu.upc.medibridge.appointments.domain.model.queries.GetAppointmentsByPatientQuery;
+import pe.edu.upc.medibridge.appointments.domain.services.AppointmentCommandService;
+import pe.edu.upc.medibridge.appointments.domain.services.AppointmentQueryService;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.AppointmentResource;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.ScheduleAppointmentResource;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.AppointmentResourceFromEntityAssembler;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.ScheduleAppointmentCommandFromResourceAssembler;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(value = "/api/v1/appointments", produces = MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "Appointments", description = "Appointment Scheduling Endpoints")
+public class AppointmentsController {
+
+    private final AppointmentCommandService appointmentCommandService;
+    private final AppointmentQueryService appointmentQueryService;
+
+    public AppointmentsController(
+            AppointmentCommandService appointmentCommandService,
+            AppointmentQueryService appointmentQueryService) {
+        this.appointmentCommandService = appointmentCommandService;
+        this.appointmentQueryService = appointmentQueryService;
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AppointmentResource> scheduleAppointment(
+            @RequestBody ScheduleAppointmentResource resource) {
+        var command = ScheduleAppointmentCommandFromResourceAssembler.toCommandFromResource(resource);
+        var appointment = appointmentCommandService.handle(command);
+
+        if (appointment.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var appointmentResource = AppointmentResourceFromEntityAssembler.toResourceFromEntity(appointment.get());
+        return new ResponseEntity<>(appointmentResource, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{appointmentId}")
+    public ResponseEntity<AppointmentResource> getAppointmentById(@PathVariable Long appointmentId) {
+        var appointment = appointmentQueryService.handle(new GetAppointmentByIdQuery(appointmentId));
+
+        if (appointment.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var appointmentResource = AppointmentResourceFromEntityAssembler.toResourceFromEntity(appointment.get());
+        return ResponseEntity.ok(appointmentResource);
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentResource>> getAppointmentsByPatient(@PathVariable Long patientId) {
+        var appointments = appointmentQueryService.handle(new GetAppointmentsByPatientQuery(patientId));
+        var appointmentResources = appointments.stream()
+                .map(AppointmentResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(appointmentResources);
+    }
+}
