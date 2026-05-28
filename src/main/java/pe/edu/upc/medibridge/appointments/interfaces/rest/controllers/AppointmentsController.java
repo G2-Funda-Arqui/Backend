@@ -15,9 +15,11 @@ import pe.edu.upc.medibridge.appointments.domain.model.queries.GetAppointmentsBy
 import pe.edu.upc.medibridge.appointments.domain.services.AppointmentCommandService;
 import pe.edu.upc.medibridge.appointments.domain.services.AppointmentQueryService;
 import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.AppointmentResource;
-import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.ScheduleAppointmentResource;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.ScheduleFamilyVisitResource;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.resources.ScheduleMedicalAppointmentResource;
 import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.AppointmentResourceFromEntityAssembler;
-import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.ScheduleAppointmentCommandFromResourceAssembler;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.ScheduleFamilyVisitCommandFromResourceAssembler;
+import pe.edu.upc.medibridge.appointments.interfaces.rest.transform.ScheduleMedicalAppointmentCommandFromResourceAssembler;
 
 import java.util.List;
 
@@ -36,10 +38,24 @@ public class AppointmentsController {
         this.appointmentQueryService = appointmentQueryService;
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AppointmentResource> scheduleAppointment(
-            @RequestBody ScheduleAppointmentResource resource) {
-        var command = ScheduleAppointmentCommandFromResourceAssembler.toCommandFromResource(resource);
+    @PostMapping(value = "/family-visits", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AppointmentResource> scheduleFamilyVisit(
+            @RequestBody ScheduleFamilyVisitResource resource) {
+        var command = ScheduleFamilyVisitCommandFromResourceAssembler.toCommandFromResource(resource);
+        var appointment = appointmentCommandService.handle(command);
+
+        if (appointment.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var appointmentResource = AppointmentResourceFromEntityAssembler.toResourceFromEntity(appointment.get());
+        return new ResponseEntity<>(appointmentResource, HttpStatus.CREATED);
+    }
+
+    @PostMapping(value = "/medical", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AppointmentResource> scheduleMedicalAppointment(
+            @RequestBody ScheduleMedicalAppointmentResource resource) {
+        var command = ScheduleMedicalAppointmentCommandFromResourceAssembler.toCommandFromResource(resource);
         var appointment = appointmentCommandService.handle(command);
 
         if (appointment.isEmpty()) {

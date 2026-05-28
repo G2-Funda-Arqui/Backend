@@ -6,7 +6,8 @@ import java.time.LocalDateTime;
 public record AppointmentScheduledEvent(
         Integer appointmentId,
         Long patientId,
-        Long scheduledByUserId,
+        Long doctorProfileId,
+        Long familyMemberProfileId,
         String appointmentType,
         LocalDateTime startsAt,
         LocalDateTime endsAt,
@@ -16,10 +17,11 @@ public record AppointmentScheduledEvent(
     public AppointmentScheduledEvent(
             Integer appointmentId,
             Long patientId,
-            Long scheduledByUserId,
+            Long doctorProfileId,
+            Long familyMemberProfileId,
             String appointmentType,
             LocalDateTime startsAt,
             LocalDateTime endsAt) {
-        this(appointmentId, patientId, scheduledByUserId, appointmentType, startsAt, endsAt, Instant.now(), 1);
+        this(appointmentId, patientId, doctorProfileId, familyMemberProfileId, appointmentType, startsAt, endsAt, Instant.now(), 1);
     }
 }

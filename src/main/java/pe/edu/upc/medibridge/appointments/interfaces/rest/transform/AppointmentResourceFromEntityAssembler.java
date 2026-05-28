@@ -9,7 +9,8 @@ public class AppointmentResourceFromEntityAssembler {
         return new AppointmentResource(
                 appointment.getId(),
                 appointment.getPatientId(),
-                appointment.getScheduledByUserId(),
+                appointment.getDoctorProfileId(),
+                appointment.getFamilyMemberProfileId(),
                 appointment.getAppointmentType().name(),
                 appointment.getStatus().name(),
                 appointment.getTimeSlot().getStartsAt(),

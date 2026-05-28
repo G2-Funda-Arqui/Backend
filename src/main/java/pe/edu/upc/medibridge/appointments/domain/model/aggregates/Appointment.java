@@ -13,7 +13,8 @@ import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import pe.edu.upc.medibridge.appointments.domain.model.commands.ScheduleAppointmentCommand;
+import pe.edu.upc.medibridge.appointments.domain.model.commands.ScheduleFamilyVisitCommand;
+import pe.edu.upc.medibridge.appointments.domain.model.commands.ScheduleMedicalAppointmentCommand;
 import pe.edu.upc.medibridge.appointments.domain.model.valueobjects.AppointmentStatus;
 import pe.edu.upc.medibridge.appointments.domain.model.valueobjects.AppointmentType;
 import pe.edu.upc.medibridge.appointments.domain.model.valueobjects.TimeSlot;
@@ -29,9 +30,9 @@ public class Appointment extends AuditableAbstractAggregateRoot<Appointment> {
     @Column(nullable = false)
     private Long patientId;
 
-    @NotNull
-    @Column(nullable = false)
-    private Long scheduledByUserId;
+    private Long familyMemberProfileId;
+
+    private Long doctorProfileId;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -54,10 +55,19 @@ public class Appointment extends AuditableAbstractAggregateRoot<Appointment> {
     @Column(length = 240)
     private String reason;
 
-    public Appointment(ScheduleAppointmentCommand command, TimeSlot timeSlot) {
+    public Appointment(ScheduleFamilyVisitCommand command, TimeSlot timeSlot) {
         this.patientId = command.patientId();
-        this.scheduledByUserId = command.scheduledByUserId();
-        this.appointmentType = command.appointmentType();
+        this.familyMemberProfileId = command.familyMemberProfileId();
+        this.appointmentType = AppointmentType.FAMILY_VISIT;
+        this.status = AppointmentStatus.SCHEDULED;
+        this.timeSlot = timeSlot;
+        this.reason = command.reason();
+    }
+
+    public Appointment(ScheduleMedicalAppointmentCommand command, TimeSlot timeSlot) {
+        this.patientId = command.patientId();
+        this.doctorProfileId = command.doctorProfileId();
+        this.appointmentType = AppointmentType.MEDICAL;
         this.status = AppointmentStatus.SCHEDULED;
         this.timeSlot = timeSlot;
         this.reason = command.reason();
