@@ -2,14 +2,10 @@ package pe.edu.upc.medibridge.appointments.interfaces.rest.resources;
 
 import java.time.LocalDateTime;
 
-public record AppointmentResource(
-        int id,
+public record ScheduleMedicalAppointmentResource(
         Long patientId,
         Long doctorProfileId,
-        Long familyMemberProfileId,
-        String appointmentType,
-        String status,
         LocalDateTime startsAt,
-        LocalDateTime endsAt,
+        Integer durationInMinutes,
         String reason) {
 }

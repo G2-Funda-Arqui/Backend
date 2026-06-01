@@ -1,13 +1,10 @@
 package pe.edu.upc.medibridge.appointments.domain.model.commands;
 
-import pe.edu.upc.medibridge.appointments.domain.model.valueobjects.AppointmentType;
-
 import java.time.LocalDateTime;
 
-public record ScheduleAppointmentCommand(
+public record ScheduleMedicalAppointmentCommand(
         Long patientId,
-        Long scheduledByUserId,
-        AppointmentType appointmentType,
+        Long doctorProfileId,
         LocalDateTime startsAt,
         Integer durationInMinutes,
         String reason) {
