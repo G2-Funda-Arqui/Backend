@@ -2,6 +2,7 @@ package pe.edu.upc.medibridge.medicationmanagement.application.commandservices;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import pe.edu.upc.medibridge.medicationmanagement.application.outboundservices.acl.ExternalPatientContextService;
 import pe.edu.upc.medibridge.medicationmanagement.domain.model.commands.RegisterMedicationCommand;
 import pe.edu.upc.medibridge.medicationmanagement.domain.model.commands.UpdateMedicationStockCommand;
 import pe.edu.upc.medibridge.medicationmanagement.domain.model.entities.Medication;
@@ -18,16 +19,22 @@ import java.util.Optional;
 public class MedicationInventoryCommandServiceImpl implements MedicationInventoryCommandService {
     private final MedicationRepository medicationRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ExternalPatientContextService externalPatientContextService;
 
     public MedicationInventoryCommandServiceImpl(
             MedicationRepository medicationRepository,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            ExternalPatientContextService externalPatientContextService) {
         this.medicationRepository = medicationRepository;
         this.eventPublisher = eventPublisher;
+        this.externalPatientContextService = externalPatientContextService;
     }
 
     @Override
     public Optional<Medication> handle(RegisterMedicationCommand command) {
+        if (!externalPatientContextService.patientExists(command.patientId())) {
+            throw new IllegalArgumentException("Patient does not exist: " + command.patientId());
+        }
         var medication = medicationRepository.save(new Medication(command));
         eventPublisher.publishEvent(new MedicationRegisteredEvent(medication.getId(), medication.getPatientId()));
         if (medication.isLowStock()) {

@@ -2,6 +2,7 @@ package pe.edu.upc.medibridge.payments.application.internal.commandservices;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import pe.edu.upc.medibridge.payments.application.internal.outboundservices.acl.IamExternalSubscriptionService;
 import pe.edu.upc.medibridge.payments.application.internal.outboundservices.acl.StripePaymentGatewayService;
 import pe.edu.upc.medibridge.payments.domain.model.aggregates.Invoice;
 import pe.edu.upc.medibridge.payments.domain.model.aggregates.Subscription;
@@ -33,6 +34,7 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
     private final InvoiceRepository invoiceRepository;
     private final TransactionRepository transactionRepository;
     private final StripePaymentGatewayService stripePaymentGatewayService;
+    private final IamExternalSubscriptionService iamExternalSubscriptionService;
     private final ApplicationEventPublisher eventPublisher;
 
     public SubscriptionCommandServiceImpl(
@@ -41,17 +43,22 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
             InvoiceRepository invoiceRepository,
             TransactionRepository transactionRepository,
             StripePaymentGatewayService stripePaymentGatewayService,
+            IamExternalSubscriptionService iamExternalSubscriptionService,
             ApplicationEventPublisher eventPublisher) {
         this.subscriptionRepository = subscriptionRepository;
         this.planRepository = planRepository;
         this.invoiceRepository = invoiceRepository;
         this.transactionRepository = transactionRepository;
         this.stripePaymentGatewayService = stripePaymentGatewayService;
+        this.iamExternalSubscriptionService = iamExternalSubscriptionService;
         this.eventPublisher = eventPublisher;
     }
 
     @Override
     public Optional<Subscription> handle(CreateSubscriptionCommand command) {
+        if (!iamExternalSubscriptionService.userExists(command.userId())) {
+            throw new PaymentProcessingException("User not found in IAM: " + command.userId());
+        }
         if (subscriptionRepository.existsByUserIdAndStatus(command.userId(), SubscriptionStatus.ACTIVE)) {
             throw new SubscriptionAlreadyActiveException(command.userId());
         }
@@ -70,6 +77,7 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
         }
         invoiceRepository.save(new Invoice(command.userId(), subscription.getId(), plan.getPrice(), plan.getCurrency(), InvoiceStatus.PAID));
         eventPublisher.publishEvent(new SubscriptionActivatedEvent(subscription.getId(), subscription.getUserId()));
+        iamExternalSubscriptionService.notifySubscriptionActivated(subscription.getUserId(), subscription.getId());
         return Optional.of(subscription);
     }
 
