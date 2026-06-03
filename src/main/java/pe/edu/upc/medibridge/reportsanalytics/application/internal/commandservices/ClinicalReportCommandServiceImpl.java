@@ -3,6 +3,7 @@ package pe.edu.upc.medibridge.reportsanalytics.application.internal.commandservi
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.medibridge.reportsanalytics.application.internal.outboundservices.acl.ExternalAppointmentService;
+import pe.edu.upc.medibridge.reportsanalytics.application.internal.outboundservices.acl.ExternalHealthMonitoringService;
 import pe.edu.upc.medibridge.reportsanalytics.application.internal.outboundservices.acl.ExternalMedicationService;
 import pe.edu.upc.medibridge.reportsanalytics.application.internal.outboundservices.acl.ExternalPatientProfileService;
 import pe.edu.upc.medibridge.reportsanalytics.domain.model.aggregates.ClinicalReport;
@@ -22,6 +23,7 @@ import java.util.Optional;
 public class ClinicalReportCommandServiceImpl implements ClinicalReportCommandService {
     private final ClinicalReportRepository clinicalReportRepository;
     private final ITextPdfReportGenerator pdfReportGenerator;
+    private final ExternalHealthMonitoringService externalHealthMonitoringService;
     private final ExternalMedicationService externalMedicationService;
     private final ExternalAppointmentService externalAppointmentService;
     private final ExternalPatientProfileService externalPatientProfileService;
@@ -30,12 +32,14 @@ public class ClinicalReportCommandServiceImpl implements ClinicalReportCommandSe
     public ClinicalReportCommandServiceImpl(
             ClinicalReportRepository clinicalReportRepository,
             ITextPdfReportGenerator pdfReportGenerator,
+            ExternalHealthMonitoringService externalHealthMonitoringService,
             ExternalMedicationService externalMedicationService,
             ExternalAppointmentService externalAppointmentService,
             ExternalPatientProfileService externalPatientProfileService,
             ApplicationEventPublisher eventPublisher) {
         this.clinicalReportRepository = clinicalReportRepository;
         this.pdfReportGenerator = pdfReportGenerator;
+        this.externalHealthMonitoringService = externalHealthMonitoringService;
         this.externalMedicationService = externalMedicationService;
         this.externalAppointmentService = externalAppointmentService;
         this.externalPatientProfileService = externalPatientProfileService;
@@ -60,8 +64,9 @@ public class ClinicalReportCommandServiceImpl implements ClinicalReportCommandSe
                 "Patient: " + patientName + ". Report type: " + command.reportType()
                         + ". Evaluation period: " + command.startDate() + " to " + command.endDate() + ".",
                 1));
-        report.addSection(new ReportSection("Medication management", externalMedicationService.getMedicationSummary(command.patientId()), 2));
-        report.addSection(new ReportSection("Appointments", externalAppointmentService.getAppointmentSummary(command.patientId()), 3));
+        report.addSection(new ReportSection("Health monitoring", externalHealthMonitoringService.getPatientClinicalSummary(command.patientId()), 2));
+        report.addSection(new ReportSection("Medication management", externalMedicationService.getMedicationSummary(command.patientId()), 3));
+        report.addSection(new ReportSection("Appointments", externalAppointmentService.getAppointmentSummary(command.patientId()), 4));
         var savedReport = clinicalReportRepository.save(report);
         eventPublisher.publishEvent(new ClinicalReportGeneratedEvent(savedReport.getId(), savedReport.getPatientId()));
         return Optional.of(savedReport);
