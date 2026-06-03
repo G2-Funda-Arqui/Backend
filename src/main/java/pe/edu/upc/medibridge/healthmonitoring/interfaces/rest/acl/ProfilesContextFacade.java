@@ -7,7 +7,7 @@ import pe.edu.upc.medibridge.profiles.domain.model.queries.GetPatientProfileById
 import pe.edu.upc.medibridge.profiles.domain.services.CareRelationshipQueryService;
 import pe.edu.upc.medibridge.profiles.domain.services.PatientProfileQueryService;
 
-@Service
+@Service("healthMonitoringProfilesContextFacade")
 public class ProfilesContextFacade implements ExternalProfilesContextService {
 
     private final PatientProfileQueryService patientProfileQueryService;
